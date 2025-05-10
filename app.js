@@ -4,6 +4,7 @@ const {Server} = require('socket.io');
 const path = require('path');
 const connectDB = require('./model/database');
 const messageRoutes = require('./controller/messageRoutes');
+const Message = require('./model/message'); 
 
 const app = express();
 const server = http.createServer(app);
@@ -27,10 +28,27 @@ connectDB();
 // API
 app.use('/api', messageRoutes);
 
+app.get('/home', (req, res) => {
+  res.render('home');
+});
+
+
+// WebSocket logic
+io.on('connection', socket => {
+  console.log('A user connected');
+
+  socket.on('chat message', async (msg) => {
+    const val = new Message({content: msg});
+    await val.save();
+    io.emit('chat message', msg);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected');
+  });
+});
+
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
 
-app.get('/', (req, res) => {
-  res.render('home');
-});
