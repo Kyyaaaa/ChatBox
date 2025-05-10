@@ -2,7 +2,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('chat-form');
   const input = document.getElementById('message-input');
   const messages = document.getElementById('messages-box');
-  const socket = io();
+  const token = localStorage.getItem('token');
+
+  if(!token) {
+    window.location.href = '/login';
+    return;
+  }
+
+  document.getElementById('home-container').style.display = 'block';
+
+  const socket = io({
+    auth: {
+      token: token
+    }
+  });
 
   async function loadmessages() {    
     try {

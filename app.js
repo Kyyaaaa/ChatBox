@@ -8,6 +8,7 @@ const messageRoutes = require('./controller/messageRoutes');
 const userRoutes = require('./controller/userRoutes');
 const Message = require('./model/message'); 
 const User = require('./model/user');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,8 +42,24 @@ app.get('/login', (req, res) => {
 });
 
 // WebSocket logic
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  // Debug
+  console.log(token);
+  if(!token) {
+    return next(new Error('Authentication error'));
+  }
+  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+    if(err) {
+      return next(new Error('Authentication error'));
+    }
+    socket.user = decoded;
+    next();
+  });
+});
+
 io.on('connection', socket => {
-  console.log('A user connected');
+  console.log('A user connected', socket.user.username);
 
   socket.on('chat message', async (msg) => {
     const val = new Message({content: msg});
@@ -58,10 +75,10 @@ io.on('connection', socket => {
 // Debug
 connectDB().then(async() => {
   try {
-    const flag = await User.findOne({username: 'testuser'});
+    const flag = await User.findOne({username: 'testuser2'});
     if(!flag) {
       const val = new User({
-        username: 'testuser',
+        username: 'testuser2',
         password: '123'
       });
       await val.save();
